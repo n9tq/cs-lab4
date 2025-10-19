@@ -123,4 +123,7 @@ int main(void)
 	TreeInsert(pBST,&d,d.iAccountNumber);
 	InOrder(pBST,PrintCustomer);
 	printf("\n");
+
+	// Free memory allocated to tree
+	DestroyTree(pBST);
 }
