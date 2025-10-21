@@ -41,6 +41,7 @@ void TreeInsert(BST * pBST, void * satellite, long long key)
                 pBST->right = malloc(sizeof(BST));
                 pBST->right->item = satellite;
                 pBST->right->key = key;
+                pBST->right->parent = pBST;
                 pBST->right->right = NULL;
                 pBST->right->left = NULL;
                 inserted = 1;   // Marks that we've inserted and can exit the loop
@@ -50,6 +51,7 @@ void TreeInsert(BST * pBST, void * satellite, long long key)
                 pBST->left = malloc(sizeof(BST));
                 pBST->left->item = satellite;
                 pBST->left->key = key;
+                pBST->left->parent = pBST;
                 pBST->left->right = NULL;
                 pBST->left->left = NULL;
                 inserted = 1;   // Marks that we've inserted and can exit the loop
@@ -138,7 +140,6 @@ BST * NodeSearch(BST * pBST, long long key){
         itemToReturn = NodeSearch(pBST->left, key);
     }else if(key == pBST->key){
         itemToReturn = pBST;
-        printf("Pointer memory: %p\n", pBST);
         return itemToReturn;
     }else{
         itemToReturn = NULL;
@@ -150,33 +151,73 @@ BST * NodeSearch(BST * pBST, long long key){
 // This function removes nodes from the tree whether it has no children, one child, or two children.
 void TreeDelete(BST * pBST, long long key)
 {
+    // Find the node to be deleted
     BST * itemToDelete = NodeSearch(pBST, key);
-    BST * temp;
+
+    // If the node to be deleted has no children, then set it's parent pointer to it to NULL and free the memory
     if(itemToDelete->left == NULL && itemToDelete->right == NULL){
-        printf("Has no children: %d\n", itemToDelete->key);
-        itemToDelete->key = 0;
-        printf("New key: %d\n", itemToDelete->key);
-        if(itemToDelete->left == NULL){
-            printf("Left is empty\n");
-        }
-        if(itemToDelete->right == NULL){
-            printf("Right is empty\n");
-        }
-        printf("Pointer adress: %p\n", itemToDelete);
-        free(itemToDelete);
-    }else if(itemToDelete->left != NULL || itemToDelete->right != NULL){
-        if(itemToDelete->left != NULL){
-            printf("Has left child\n");
+        if(key > itemToDelete->parent->key){
+            itemToDelete->parent->right = NULL;
         }else{
-            printf("Has right child\n");
-            
+            itemToDelete->parent->left = NULL;
         }
+        free(itemToDelete);
+    }
+    // If the object has only 1 child node then do the appropriate fix and delete the node to be deleted
+    else if(itemToDelete->left != NULL && itemToDelete->right == NULL){
+        if(itemToDelete->parent->left == itemToDelete){
+            /*
+            This repeated block of code basically performs the necessary swap function within the tree. It makes the
+            to-be-deleted node's parent point to the to-be-deleted node's child, and then deletes the to-be-deleted node.
+            The if/else statement surrounding it decides if the to-be-deleted node's parent's left or right node should point
+            to the to-be-deleted node's child.
+            */
+            itemToDelete->parent->left = itemToDelete->left;
+            itemToDelete->left->parent = itemToDelete->parent;
+            free(itemToDelete);
+        }else{
+            itemToDelete->parent->right = itemToDelete->left;
+            itemToDelete->left->parent = itemToDelete->parent;
+            free(itemToDelete);
+        }
+    }else if(itemToDelete->left == NULL && itemToDelete->right != NULL){
+        if(itemToDelete->parent->left == itemToDelete){
+            itemToDelete->parent->left = itemToDelete->right;
+            itemToDelete->right->parent = itemToDelete->parent;
+            free(itemToDelete);
+        }else{
+            itemToDelete->parent->right = itemToDelete->right;
+            itemToDelete->right->parent = itemToDelete->parent;
+            free(itemToDelete);
+        }
+    // If the object has 2 children nodes then do appropriate fix and delte the node to be deleted
     }else{
-        printf("Has 2 children\n");
+        // Find the object to be deleted's successor by checking the right subtree
+        if(itemToDelete->right->left != NULL){
+            if(itemToDelete->parent->left == itemToDelete){
+                itemToDelete->parent->left = itemToDelete->right->left;
+                itemToDelete->right->left->parent = itemToDelete->parent;
+                free(itemToDelete);
+            }else{
+                itemToDelete->parent->right = itemToDelete->right->left;
+                itemToDelete->right->left->parent = itemToDelete->parent;
+                free(itemToDelete);
+            }
+        }else{
+            if(itemToDelete->parent->left == itemToDelete){
+                itemToDelete->parent->left = itemToDelete->right;
+                itemToDelete->right->parent = itemToDelete->parent;
+                free(itemToDelete);
+            }else{
+                itemToDelete->parent->right = itemToDelete->right;
+                itemToDelete->right->parent = itemToDelete->parent;
+                free(itemToDelete);
+            }
+        }
     }
 }
 
-
+// Function to destroy left sub trees and free their memory
 void DestroyLeftSide(BST * pBST){
     if(pBST->left != NULL){
         if(pBST->left->right != NULL){
@@ -187,6 +228,7 @@ void DestroyLeftSide(BST * pBST){
     free(pBST);
 }
 
+// Function to destroy right sub trees and free their memory
 void DestroyRightSide(BST * pBST){
     if(pBST->right != NULL){
         if(pBST->right->left != NULL){
@@ -197,6 +239,7 @@ void DestroyRightSide(BST * pBST){
     free(pBST);
 }
 
+// Function to destroy BST by using the DestroyLeftSide() and DestroyRightSide functions
 void DestroyTree(BST * pBST){
     // Free left side of tree
     DestroyLeftSide(pBST->left);
